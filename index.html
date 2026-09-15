@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Aptitude & Reasoning AI assessment analytics dashboard" />
+  <title>Aptitude & Reasoning AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">A</div>
+        <div><strong>Aptitude<span>AI</span></strong><small>Assessment Studio</small></div>
+      </div>
+      <nav>
+        <button class="nav-item active" data-view="overview"><span>⌂</span>Overview</button>
+        <button class="nav-item" data-view="students"><span>◉</span>Students</button>
+        <button class="nav-item" data-view="analytics"><span>◫</span>Analytics</button>
+        <button class="nav-item" data-view="reports"><span>▤</span>Reports</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sync-card"><span class="pulse"></span><div><b>Jotform connected</b><small>Last sync just now</small></div></div>
+        <div class="profile"><div class="avatar">KS</div><div><b>Creator</b><small>Admin account</small></div><button aria-label="Profile menu">•••</button></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn mobile-menu" id="menuBtn" aria-label="Open menu">☰</button>
+        <div class="breadcrumb"><span>Assessment Studio</span><i>/</i><b id="pageTitle">Overview</b></div>
+        <div class="top-actions"><button class="icon-btn" title="Notifications">♢</button><button class="creator-btn"><span class="avatar tiny">KS</span> K. Shaik <span>⌄</span></button></div>
+      </header>
+
+      <section class="content">
+        <div class="hero-row">
+          <div><p class="eyebrow">APTITUDE & REASONING MOCK TEST</p><h1 id="viewHeading">Good evening, Creator.</h1><p class="subhead">Here’s what changed in your assessment workspace.</p></div>
+          <button class="primary-btn" id="jotformBtn">↗ Open Jotform</button>
+        </div>
+
+        <div id="overviewView" class="view">
+          <section class="metric-grid">
+            <article class="metric-card"><div class="metric-icon violet">Σ</div><div><small>Total submissions</small><strong>1</strong><span class="trend">↑ 100% <em>this session</em></span></div></article>
+            <article class="metric-card"><div class="metric-icon blue">%</div><div><small>Average score</small><strong>43.3%</strong><span class="trend">AI calculated</span></div></article>
+            <article class="metric-card"><div class="metric-icon green">✓</div><div><small>Questions assessed</small><strong>30</strong><span class="trend">10-day syllabus</span></div></article>
+            <article class="metric-card"><div class="metric-icon orange">!</div><div><small>Needs attention</small><strong>5</strong><span class="trend">topics to review</span></div></article>
+          </section>
+
+          <section class="dashboard-grid">
+            <article class="panel performance-panel"><div class="panel-head"><div><h2>Latest performance</h2><p>Most recent submitted assessment</p></div><button class="ghost-btn" id="openReport">View full report ↗</button></div><div class="student-strip"><div class="avatar large">KS</div><div><b>khadar shaik</b><small>Roll No. 24B91A5750 · Submitted today</small></div><div class="score-block"><strong>13<span>/30</span></strong><small>43.33%</small></div></div><div class="progress-wrap"><div class="progress-label"><span>Overall performance</span><b>43%</b></div><div class="progress"><span style="width:43.33%"></span></div></div><div class="mini-columns"><div><small>Correct</small><b>13</b></div><div><small>Incorrect</small><b>17</b></div><div><small>Duration</small><b>—</b></div><div><small>Status</small><b class="success-text">Reviewed</b></div></div></article>
+
+            <article class="panel ai-panel"><div class="ai-badge">✦ AI INSIGHT</div><h2>Priority areas</h2><p>The latest attempt shows a clear opportunity to improve quantitative word problems before the next assessment.</p><div class="priority"><div><span>01</span><b>Time, Work & Speed</b></div><strong>Needs focus</strong></div><div class="priority"><div><span>02</span><b>Commercial Math</b></div><strong>Needs focus</strong></div><div class="priority"><div><span>03</span><b>Logical Reasoning</b></div><strong>Practice</strong></div></article>
+          </section>
+
+          <section class="panel table-panel"><div class="panel-head"><div><h2>Recent submissions</h2><p>Results remain visible to the creator only.</p></div><button class="ghost-btn" data-view-link="students">View all</button></div><div class="table-scroll"><table><thead><tr><th>Candidate</th><th>Roll number</th><th>Score</th><th>Performance</th><th>Status</th><th></th></tr></thead><tbody><tr><td><div class="candidate"><span class="avatar small">KS</span><b>khadar shaik</b></div></td><td>24B91A5750</td><td><b>13 / 30</b></td><td><div class="table-progress"><span style="width:43.33%"></span></div><small>43.33%</small></td><td><span class="status reviewed">AI reviewed</span></td><td><button class="row-btn" data-report="true">View</button></td></tr></tbody></table></div></section>
+        </div>
+
+        <div id="studentsView" class="view hidden"><div class="section-head"><div><h2>Students</h2><p>Every submitted assessment in one place.</p></div><div class="search-box">⌕ <input id="studentSearch" placeholder="Search name or roll number" /></div></div><section class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>Candidate</th><th>Roll number</th><th>Score</th><th>Percentage</th><th>Status</th><th></th></tr></thead><tbody><tr><td><div class="candidate"><span class="avatar small">KS</span><b>khadar shaik</b></div></td><td>24B91A5750</td><td>13 / 30</td><td>43.33%</td><td><span class="status reviewed">AI reviewed</span></td><td><button class="row-btn" data-report="true">Report</button></td></tr></tbody></table></div></section></div>
+
+        <div id="analyticsView" class="view hidden"><div class="section-head"><div><h2>Analytics</h2><p>Understand where candidates need support.</p></div></div><section class="analytics-grid"><article class="panel"><div class="panel-head"><div><h2>Topic performance</h2><p>Latest candidate · 30 questions</p></div></div><div class="bars"><div><span>Number System</span><b>80%</b><i><em style="width:80%"></em></i></div><div><span>Probability & Statistics</span><b>70%</b><i><em style="width:70%"></em></i></div><div><span>Reasoning & Logic</span><b>65%</b><i><em style="width:65%"></em></i></div><div><span>Commercial Math</span><b>35%</b><i><em style="width:35%"></em></i></div><div><span>Time, Work & Distance</span><b>20%</b><i><em style="width:20%"></em></i></div><div><span>Geometry & Averages</span><b>20%</b><i><em style="width:20%"></em></i></div></div></article><article class="panel insight-card"><div class="ai-badge">✦ AI SUMMARY</div><h2>What the result tells us</h2><p>Reasoning fundamentals are stronger than quantitative word-problem accuracy. The highest-value revision should start with Time & Work, Trains, Boats & Streams, then Profit & Loss and Interest.</p><div class="callout"><b>Recommended next practice</b><span>20 focused questions · 3 topics · 30 minutes</span></div></article></section></div>
+
+        <div id="reportsView" class="view hidden"><div class="section-head"><div><h2>Reports</h2><p>Creator-only AI performance reports.</p></div><button class="primary-btn" id="reportBtn2">Generate latest report</button></div><section class="panel report-card"><div class="report-top"><div class="avatar large">KS</div><div><p class="eyebrow">LATEST REPORT</p><h2>khadar shaik</h2><span>Roll No. 24B91A5750 · 15 Sep 2026</span></div><div class="report-score"><strong>13/30</strong><span>43.33%</span></div></div><div class="report-divider"></div><div class="report-columns"><div><h3>Strengths</h3><ul><li>Basic numeracy & series</li><li>Directions and odd-one-out</li><li>Probability and median</li></ul></div><div><h3>Weaknesses</h3><ul><li>Profit & Loss, Discounts, Interest</li><li>Time, Work, Trains & Boats</li><li>Coding-Decoding & Syllogisms</li></ul></div><div><h3>AI recommendation</h3><p>Revisit arithmetic word-problem formulas, geometry basics, and syllogism Venn diagrams before the next attempt.</p></div></div></section></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal hidden" id="reportModal"><div class="modal-backdrop"></div><article class="modal-card"><button class="close" id="closeModal">×</button><div class="modal-head"><div class="avatar large">KS</div><div><p class="eyebrow">AI PERFORMANCE REPORT</p><h2>khadar shaik</h2><span>24B91A5750 · Aptitude & Reasoning Mock Test</span></div></div><div class="score-hero"><div><small>Final score</small><strong>13<span>/30</span></strong></div><div class="score-ring">43<span>%</span></div></div><div class="report-columns"><div><h3>Strengths</h3><ul><li>Basic numeracy & series</li><li>Reasoning & logic</li><li>Probability & statistics</li></ul></div><div><h3>Focus next</h3><ul><li>Commercial mathematics</li><li>Time, speed & distance</li><li>Geometry & averages</li><li>Coding & syllogisms</li></ul></div></div><div class="modal-recommendation"><span>✦</span><p><b>AI recommendation</b> Build accuracy through short, timed drills. Prioritize Time & Work, Profit & Loss, Interest, and coding-decoding.</p></div></article></div>
+  <script src="app.js"></script>
+</body>
+</html>
