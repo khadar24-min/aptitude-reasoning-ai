@@ -19,10 +19,10 @@ let analysisBusy = false;
 
 const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
-const finite = value => Number.isFinite(Number(value));
+const finite = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
 const pctFor = s => finite(s?.percentage) ? Number(s.percentage) : (finite(s?.score) ? Number(s.score) / 30 * 100 : null);
 const initials = name => String(name || '').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase() || 'AI';
-const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const esc = value => String(value ?? '').replace(/[&<>'\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
 
 function showView(view){
   Object.entries({overview:$('#overviewView'),students:$('#studentsView'),analytics:$('#analyticsView'),reports:$('#reportsView'),tests:$('#testsView')}).forEach(([key,el])=>el?.classList.toggle('hidden',key!==view));
