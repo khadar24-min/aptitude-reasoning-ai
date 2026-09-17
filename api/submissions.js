@@ -55,7 +55,7 @@ async function fetchFormSubmissions(formId, apiKey) {
 }
 
 async function fetchFormQuestions(formId, apiKey) {
-  const url = `https://api.jotform.com/form/${encodeURIComponent(formId)}?apiKey=${encodeURIComponent(apiKey)}`;
+  const url = `https://api.jotform.com/form/${encodeURIComponent(formId)}/questions?apiKey=${encodeURIComponent(apiKey)}`;
   const response = await fetch(url);
   if (!response.ok) return [];
   const data = await response.json();
