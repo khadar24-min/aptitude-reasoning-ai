@@ -75,27 +75,31 @@ export default async function handler(req, res) {
   const apiKey = process.env.JOTFORM_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'JOTFORM_API_KEY is not configured' });
 
-  try {
-    const requestedDay = req.query?.day == null || req.query.day === '' ? null : Number(req.query.day);
-    const selectedTests = Number.isInteger(requestedDay) ? TESTS.filter((test) => test.day === requestedDay) : TESTS;
-    if (!selectedTests.length) return res.status(400).json({ error: 'Unknown test day' });
+  const requestedDay = req.query?.day == null || req.query.day === '' ? null : Number(req.query.day);
+  const selectedTests = Number.isInteger(requestedDay) ? TESTS.filter((test) => test.day === requestedDay) : TESTS;
+  if (!selectedTests.length) return res.status(400).json({ error: 'Unknown test day' });
 
-    const results = await Promise.all(selectedTests.map(async (test) => {
-      const [raw, questions] = await Promise.all([
-        fetchFormSubmissions(test.formId, apiKey),
-        fetchFormQuestions(test.formId, apiKey)
-      ]);
-      return raw.map((submission) => normalizeSubmission(submission, test, questions));
-    }));
+  const results = await Promise.allSettled(selectedTests.map(async (test) => {
+    const [raw, questions] = await Promise.all([
+      fetchFormSubmissions(test.formId, apiKey),
+      fetchFormQuestions(test.formId, apiKey)
+    ]);
+    return { test, submissions: raw.map((submission) => normalizeSubmission(submission, test, questions)) };
+  }));
 
-    const submissions = results.flat().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    return res.status(200).json({
-      submissions,
-      tests: TESTS.map(({ day, title, formId }) => ({ day, title, formId })),
-      total: submissions.length,
-      scoringNote: 'Scores are read from Jotform quiz/calculation fields when present. Unscored submissions omit score fields rather than displaying 0.'
-    });
-  } catch (error) {
-    return res.status(502).json({ error: 'Unable to load Jotform submissions', details: error.message });
+  const submissions = [];
+  const unavailableTests = [];
+  for (const result of results) {
+    if (result.status === 'fulfilled') submissions.push(...result.value.submissions);
+    else unavailableTests.push(result.reason?.message || 'Jotform request failed');
   }
+
+  submissions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return res.status(200).json({
+    submissions,
+    tests: TESTS.map(({ day, title, formId }) => ({ day, title, formId })),
+    total: submissions.length,
+    unavailableTests,
+    scoringNote: 'Scores are read from Jotform quiz/calculation fields when present. Unscored submissions omit score fields rather than displaying 0.'
+  });
 }
