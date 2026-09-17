@@ -15,6 +15,7 @@ const views = {overview:'Overview',students:'Students',analytics:'Analytics',rep
 let latestSubmission = null;
 let allSubmissions = [];
 let latestAnalysis = null;
+let analysisBusy = false;
 
 const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
@@ -26,8 +27,8 @@ const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;',
 function showView(view){
   Object.entries({overview:$('#overviewView'),students:$('#studentsView'),analytics:$('#analyticsView'),reports:$('#reportsView'),tests:$('#testsView')}).forEach(([key,el])=>el?.classList.toggle('hidden',key!==view));
   $$('.nav-item').forEach(item=>item.classList.toggle('active',item.dataset.view===view));
-  $('#pageTitle') && ($('#pageTitle').textContent=views[view] || view);
-  $('#viewHeading') && ($('#viewHeading').textContent=view==='overview'?'Good evening, Creator.':views[view]);
+  if($('#pageTitle')) $('#pageTitle').textContent=views[view] || view;
+  if($('#viewHeading')) $('#viewHeading').textContent=view==='overview'?'Good evening, Creator.':views[view];
   if(window.innerWidth<=760) $('#sidebar')?.classList.remove('open');
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -51,6 +52,8 @@ function ensureDailyTests(){
   }
 }
 
+function setText(selector,value){$$(selector).forEach(el=>el.textContent=value);}
+
 function renderOverview(){
   const metricCards=$$('.metric-card');
   const scored=allSubmissions.filter(s=>finite(s.score));
@@ -58,24 +61,34 @@ function renderOverview(){
   if(metricCards[0]) metricCards[0].querySelector('strong').textContent=allSubmissions.length;
   if(metricCards[1]) metricCards[1].querySelector('strong').textContent=avg==null?'—':`${avg.toFixed(1)}%`;
   if(metricCards[2]) metricCards[2].querySelector('strong').textContent=scored.length?scored.length*30:'—';
-  if(metricCards[3]){metricCards[3].querySelector('strong').textContent='—';metricCards[3].querySelector('.trend').textContent='Topic analytics pending';}
+  if(metricCards[3]){
+    const attention=latestAnalysis?.weaknesses?.length || 0;
+    metricCards[3].querySelector('strong').textContent=attention || '—';
+    metricCards[3].querySelector('.trend').textContent=attention ? 'areas to review' : 'Analysis pending';
+  }
   if(!latestSubmission) return;
   const s=latestSubmission, pct=pctFor(s), name=s.name||'Unknown candidate';
-  $$('.student-strip b,.report-top h2,.modal-head h2').forEach(el=>el.textContent=name);
-  $$('.student-strip .avatar,.report-top .avatar,.modal-head .avatar').forEach(el=>el.textContent=initials(name));
-  $$('.student-strip small').forEach(el=>el.textContent=`Roll No. ${s.rollNumber||'—'} · Latest submission`);
+  setText('.student-strip b,.report-top h2,.modal-head h2',name);
+  setText('.student-strip .avatar,.report-top .avatar,.modal-head .avatar',initials(name));
+  setText('.student-strip small',`Roll No. ${s.rollNumber||'—'} · Latest submission`);
   const scoreBlock=$('.score-block');
   if(scoreBlock){scoreBlock.querySelector('strong').innerHTML=finite(s.score)?`${Number(s.score)}<span>/30</span>`:'—';scoreBlock.querySelector('small').textContent=pct==null?'Not scored':`${pct.toFixed(2)}%`;}
   const progress=$('.performance-panel .progress span'); if(progress) progress.style.width=`${Math.max(0,Math.min(100,pct||0))}%`;
   const progressLabel=$('.performance-panel .progress-label b'); if(progressLabel) progressLabel.textContent=pct==null?'—':`${Math.round(pct)}%`;
-  const mini=$$('.mini-columns b'); if(mini.length){mini[0].textContent=finite(s.score)?Number(s.score):'—';mini[1].textContent=finite(s.score)?String(30-Number(s.score)):'—';mini[2].textContent='—';mini[3].textContent=finite(s.score)?'Reviewed':'Awaiting score';}
+  const mini=$$('.mini-columns b'); if(mini.length){mini[0].textContent=finite(s.score)?Number(s.score):'—';mini[1].textContent=finite(s.score)?String(30-Number(s.score)):'—';mini[2].textContent='—';mini[3].textContent=finite(s.score)?'AI scored':'Awaiting AI score';}
   const recent=$('#overviewView tbody tr');
-  if(recent){const cells=recent.querySelectorAll('td');if(cells[0]){cells[0].querySelector('b').textContent=name;cells[0].querySelector('.avatar').textContent=initials(name);}if(cells[1])cells[1].textContent=s.rollNumber||'—';if(cells[2])cells[2].textContent=finite(s.score)?`${Number(s.score)} / 30`:'Not scored';if(cells[3]){const bar=cells[3].querySelector('.table-progress span');if(bar)bar.style.width=`${Math.max(0,Math.min(100,pct||0))}%`;const small=cells[3].querySelector('small');if(small)small.textContent=pct==null?'—':`${pct.toFixed(2)}%`;}if(cells[4])cells[4].querySelector('.status').textContent=finite(s.score)?'AI reviewed':'Awaiting score';}
+  if(recent){const cells=recent.querySelectorAll('td');if(cells[0]){cells[0].querySelector('b').textContent=name;cells[0].querySelector('.avatar').textContent=initials(name);}if(cells[1])cells[1].textContent=s.rollNumber||'—';if(cells[2])cells[2].textContent=finite(s.score)?`${Number(s.score)} / 30`:'Not scored';if(cells[3]){const bar=cells[3].querySelector('.table-progress span');if(bar)bar.style.width=`${Math.max(0,Math.min(100,pct||0))}%`;const small=cells[3].querySelector('small');if(small)small.textContent=pct==null?'—':`${pct.toFixed(2)}%`;}if(cells[4])cells[4].querySelector('.status').textContent=finite(s.score)?'AI scored':'Awaiting score';}
+  const aiPanel=$('.ai-panel');
+  if(aiPanel && latestAnalysis){
+    const weaknesses=Array.isArray(latestAnalysis.weaknesses)?latestAnalysis.weaknesses:[];
+    const strengths=Array.isArray(latestAnalysis.strengths)?latestAnalysis.strengths:[];
+    aiPanel.innerHTML=`<div class="ai-badge">✦ AI INSIGHT</div><h2>Latest analysis</h2><p>${esc((latestAnalysis.recommendations||[]).join?.(' ') || latestAnalysis.recommendations || 'Analysis generated from the submitted answers.')}</p><div class="priority"><div><span>01</span><b>${esc(weaknesses[0]||'No major weak area identified')}</b></div><strong>Focus</strong></div><div class="priority"><div><span>02</span><b>${esc(weaknesses[1]||strengths[0]||'Continue timed practice')}</b></div><strong>${weaknesses[1]?'Focus':'Maintain'}</strong></div><div class="priority"><div><span>03</span><b>${esc(strengths[0]||'Review topic accuracy')}</b></div><strong>Practice</strong></div>`;
+  }
 }
 
 function renderStudents(){
   const tbody=$('#studentsView tbody'); if(!tbody)return;
-  tbody.innerHTML=allSubmissions.length?allSubmissions.map((s,i)=>{const pct=pctFor(s);return `<tr><td><div class="candidate"><span class="avatar small">${initials(s.name)}</span><b>${esc(s.name||'Unknown candidate')}</b></div></td><td>${esc(s.rollNumber||'—')}</td><td>${finite(s.score)?`${Number(s.score)} / 30`:'Not scored'}</td><td>${pct==null?'—':`${pct.toFixed(2)}%`}</td><td><span class="status reviewed">${finite(s.score)?'AI reviewed':'Awaiting score'}</span></td><td><button class="row-btn" data-student-index="${i}">Report</button></td></tr>`}).join(''):`<tr><td colspan="6">No submissions found.</td></tr>`;
+  tbody.innerHTML=allSubmissions.length?allSubmissions.map((s,i)=>{const pct=pctFor(s);return `<tr><td><div class="candidate"><span class="avatar small">${initials(s.name)}</span><b>${esc(s.name||'Unknown candidate')}</b></div></td><td>${esc(s.rollNumber||'—')}</td><td>${finite(s.score)?`${Number(s.score)} / 30`:'Not scored'}</td><td>${pct==null?'—':`${pct.toFixed(2)}%`}</td><td><span class="status reviewed">${finite(s.score)?'AI scored':'Awaiting score'}</span></td><td><button class="row-btn" data-student-index="${i}">Report</button></td></tr>`}).join(''):`<tr><td colspan="6">No submissions found.</td></tr>`;
 }
 
 function renderAnalytics(){
@@ -85,8 +98,15 @@ function renderAnalytics(){
   if(!bars)return;
   if(Array.isArray(topicData)&&topicData.length){
     bars.innerHTML=topicData.map(t=>{const value=Number(t.percentage ?? t.score ?? 0);return `<div><span>${esc(t.topic||t.name||'Topic')}</span><b>${Number.isFinite(value)?value.toFixed(0):0}%</b><i><em style="width:${Math.max(0,Math.min(100,Number.isFinite(value)?value:0))}%"></em></i></div>`}).join('');
+    const insight=view.querySelector('.insight-card');
+    if(insight){
+      const strongest=Array.isArray(latestAnalysis.strengths)?latestAnalysis.strengths[0]:'No strongest topic identified';
+      const weakest=Array.isArray(latestAnalysis.weaknesses)?latestAnalysis.weaknesses[0]:'No major weak topic identified';
+      const rec=Array.isArray(latestAnalysis.recommendations)?latestAnalysis.recommendations.join(' '):latestAnalysis.recommendations||'';
+      insight.innerHTML=`<div class="ai-badge">✦ AI SUMMARY</div><h2>What the result tells us</h2><p>Strongest observed area: ${esc(strongest)}. Main focus area: ${esc(weakest)}.</p><div class="callout"><b>Recommended next practice</b><span>${esc(rec||'Continue targeted practice using the weakest topic results.')}</span></div>`;
+    }
   }else{
-    bars.innerHTML='<div style="padding:16px 0;color:#8d95a6;font-size:11px">No verified topic analytics available yet.</div>';
+    bars.innerHTML='<div style="padding:16px 0;color:#8d95a6;font-size:11px">AI analysis will appear here after the latest submission is scored.</div>';
   }
 }
 
@@ -101,23 +121,68 @@ function renderReports(){
     const strengths=Array.isArray(latestAnalysis.strengths)?latestAnalysis.strengths:[];
     const weaknesses=Array.isArray(latestAnalysis.weaknesses)?latestAnalysis.weaknesses:[];
     const recommendation=Array.isArray(latestAnalysis.recommendations)?latestAnalysis.recommendations.join(' '):(latestAnalysis.recommendations||'');
-    cols.innerHTML=`<div><h3>Strengths</h3><ul>${(strengths.length?strengths:['No AI strengths available yet.']).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div><h3>Weaknesses</h3><ul>${(weaknesses.length?weaknesses:['No AI weaknesses available yet.']).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div><h3>AI recommendation</h3><p>${esc(recommendation||'Generate a report after verified scoring is available.')}</p></div>`;
+    cols.innerHTML=`<div><h3>Strengths</h3><ul>${(strengths.length?strengths:['No AI strengths available yet.']).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div><h3>Weaknesses</h3><ul>${(weaknesses.length?weaknesses:['No AI weaknesses available yet.']).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div><h3>AI recommendation</h3><p>${esc(recommendation||'Generate a report after AI scoring.')}</p></div>`;
+  }
+  const modal=$('#reportModal');
+  if(modal && latestAnalysis){
+    const strengths=Array.isArray(latestAnalysis.strengths)?latestAnalysis.strengths:[];
+    const weaknesses=Array.isArray(latestAnalysis.weaknesses)?latestAnalysis.weaknesses:[];
+    const cols=modal.querySelector('.report-columns');
+    if(cols) cols.innerHTML=`<div><h3>Strengths</h3><ul>${(strengths.length?strengths:['No AI strengths available.']).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div><h3>Focus next</h3><ul>${(weaknesses.length?weaknesses:['No AI weaknesses available.']).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+    const scoreHero=modal.querySelector('.score-hero');
+    if(scoreHero){scoreHero.querySelector('strong').innerHTML=finite(s.score)?`${Number(s.score)}<span>/30</span>`:'—';scoreHero.querySelector('.score-ring').innerHTML=pct==null?'—':`${Math.round(pct)}<span>%</span>`;}
+    const rec=modal.querySelector('.modal-recommendation p');
+    if(rec) rec.innerHTML=`<b>AI recommendation</b> ${esc(Array.isArray(latestAnalysis.recommendations)?latestAnalysis.recommendations.join(' '):latestAnalysis.recommendations||'Continue targeted practice based on the analysis.')}`;
   }
 }
 
 function openReport(){ $('#reportModal')?.classList.remove('hidden'); document.body.style.overflow='hidden'; renderReports(); }
 function closeReport(){ $('#reportModal')?.classList.add('hidden'); document.body.style.overflow=''; }
 
+function cacheKey(submission){return `aptitude-ai-analysis:${submission?.id||'unknown'}`;}
+
+function applyAnalysis(result, submission){
+  if(!result || !submission)return;
+  latestAnalysis=result;
+  if(finite(result.score)){
+    submission.score=Number(result.score);
+    submission.percentage=finite(result.percentage)?Number(result.percentage):(Number(result.score)/30*100);
+  }
+  const index=allSubmissions.findIndex(x=>x.id===submission.id);
+  if(index>=0) allSubmissions[index]={...allSubmissions[index],...submission};
+  try{localStorage.setItem(cacheKey(submission),JSON.stringify(result));}catch{}
+  renderOverview();renderStudents();renderAnalytics();renderReports();
+}
+
+async function analyzeSubmission(submission, options={}){
+  if(!submission || analysisBusy)return;
+  const cachedKey=cacheKey(submission);
+  if(!options.force){
+    try{const cached=JSON.parse(localStorage.getItem(cachedKey)||'null');if(cached){applyAnalysis(cached,submission);return;}}catch{}
+  }
+  analysisBusy=true;
+  const button=$('#reportBtn2');
+  if(button){button.disabled=true;button.textContent='Analyzing…';}
+  try{
+    const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({submission})});
+    if(!r.ok){const details=await r.text();throw new Error(details||'AI service unavailable');}
+    const result=await r.json();
+    if(result.rawAnalysis) throw new Error('AI returned an unreadable analysis response');
+    applyAnalysis(result,submission);
+  }catch(error){
+    console.error('AI analysis failed:',error);
+    const report=$('#reportsView');
+    if(report){const p=report.querySelector('.section-head p');if(p)p.textContent='AI analysis could not be generated yet. Check the API configuration and try again.';}
+  }finally{
+    analysisBusy=false;
+    if(button){button.disabled=false;button.textContent='Generate latest report';}
+  }
+}
+
 async function generateReport(){
   if(!latestSubmission)return openReport();
-  const button=$('#reportBtn2'); if(button){button.disabled=true;button.textContent='Generating…';}
-  try{
-    const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({submission:latestSubmission})});
-    if(!r.ok)throw new Error('AI service unavailable');
-    latestAnalysis=await r.json();
-    renderOverview();renderAnalytics();renderReports();
-  }catch(error){console.error(error);}
-  finally{if(button){button.disabled=false;button.textContent='Generate latest report';}openReport();}
+  await analyzeSubmission(latestSubmission,{force:true});
+  openReport();
 }
 
 async function loadSubmissions(){
@@ -128,11 +193,12 @@ async function loadSubmissions(){
     allSubmissions=Array.isArray(data.submissions)?data.submissions:[];
     latestSubmission=allSubmissions[0]||null;
     renderOverview();renderStudents();renderAnalytics();renderReports();
+    if(latestSubmission && !finite(latestSubmission.score)) await analyzeSubmission(latestSubmission);
   }catch(error){console.warn(error.message);}
 }
 
 function bindEvents(){
-  document.addEventListener('click',event=>{
+  document.addEventListener('click',async event=>{
     const nav=event.target.closest('.nav-item');
     if(nav){showView(nav.dataset.view);return;}
     const viewLink=event.target.closest('[data-view-link]');
@@ -140,9 +206,9 @@ function bindEvents(){
     const test=event.target.closest('.start-test');
     if(test){window.open(test.dataset.testUrl,'_blank','noopener,noreferrer');return;}
     const report=event.target.closest('[data-report="true"], [data-student-index]');
-    if(report){const index=report.dataset.studentIndex;if(index!==undefined)latestSubmission=allSubmissions[Number(index)]||latestSubmission;openReport();return;}
+    if(report){const index=report.dataset.studentIndex;if(index!==undefined)latestSubmission=allSubmissions[Number(index)]||latestSubmission;openReport();if(latestSubmission && !finite(latestSubmission.score)) await analyzeSubmission(latestSubmission);return;}
   });
-  $('#openReport')?.addEventListener('click',openReport);
+  $('#openReport')?.addEventListener('click',async()=>{openReport();if(latestSubmission&&!finite(latestSubmission.score))await analyzeSubmission(latestSubmission);});
   $('#closeModal')?.addEventListener('click',closeReport);
   $('#reportModal .modal-backdrop')?.addEventListener('click',closeReport);
   $('#reportBtn2')?.addEventListener('click',generateReport);
