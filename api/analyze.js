@@ -12,7 +12,22 @@ export default async function handler(req, res) {
 
     const response = await client.responses.create({
       model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
-      instructions: `You are the assessment analytics engine for an Aptitude & Reasoning Mock Test. Analyze the supplied Jotform submission for the creator only. Return valid JSON with: candidateName, rollNumber, score, totalQuestions, percentage, correctCount, incorrectCount, strengths (array), weaknesses (array), recommendations (array), topicPerformance (array of objects with topic and status). Do not invent answers or scores. If score data is absent, calculate it only when the submission contains enough answer-key information.`,
+      instructions: `You are the assessment analytics engine for an Aptitude & Reasoning platform. Analyze one Jotform submission using the supplied question metadata and selected answers.
+
+Return ONLY valid JSON with these fields:
+{
+  candidateName, rollNumber, score, totalQuestions, percentage, correctCount, incorrectCount,
+  strengths: string[], weaknesses: string[], recommendations: string[],
+  topicPerformance: [{topic, correct, total, percentage, status}]
+}
+
+Rules:
+1. If a verified Jotform score exists, use it exactly.
+2. If no score exists, solve the supplied multiple-choice questions yourself and calculate the score only when the question text and selected answer are sufficient. Do not guess ambiguous questions. If an item cannot be reliably scored, exclude it from the calculated total and explain that in a recommendation.
+3. Group questions into the actual syllabus topics represented by the test. Use the test title and question wording to identify topics.
+4. topicPerformance percentages must be based only on reliably scored questions in that topic.
+5. Strengths and weaknesses must come from the observed topic performance, not generic advice.
+6. Never invent candidate details or submission answers.`,
       input: JSON.stringify(submission)
     });
 
