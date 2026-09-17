@@ -5,11 +5,11 @@ const TESTS = [
   { day: 3, title: 'Partnership & Interest', formId: '262583763359066' },
   { day: 4, title: 'Time & Work, Pipes & Cisterns', formId: '262584010232042' },
   { day: 5, title: 'Time & Distance, Trains, Boats & Streams', formId: '262583998705071' },
-  { day: 6, title: 'Averages, Ages, Mixtures & Allegations', formId: '262583819114057' },
+  { day: 6, title: 'Averages, Ages, Mixtures & Allegations', formId: '262593847661066' },
   { day: 7, title: 'Mensuration & Probability', formId: '262584333992063' },
   { day: 8, title: 'Permutations & Combinations, Data Interpretation', formId: '262584559384068' },
   { day: 9, title: 'Series, Coding-Decoding, Analogy & Directions', formId: '262584448472063' },
-  { day: 10, title: 'Ranking, Syllogisms & Seating Arrangement', formId: '262584252409056' }
+  { day: 10, title: 'Ranking, Syllogisms & Seating Arrangement', formId: '262593423132049' }
 ];
 
 function textValue(value) {
