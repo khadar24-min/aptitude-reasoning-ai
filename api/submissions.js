@@ -31,7 +31,7 @@ function normalizeSubmission(submission, test, questions) {
   const percentageRaw = find(/percentage|percent|accuracy/i);
   const score = Number.parseFloat(textValue(scoreRaw).replace('%',''));
   const percentage = Number.parseFloat(textValue(percentageRaw).replace('%',''));
-  return {
+  const result = {
     id: submission.id,
     testDay: test.day,
     testTitle: test.title,
@@ -39,11 +39,12 @@ function normalizeSubmission(submission, test, questions) {
     createdAt: submission.created_at,
     name,
     rollNumber,
-    score: Number.isFinite(score) ? score : null,
-    percentage: Number.isFinite(percentage) ? percentage : null,
     answers: values,
     questions
   };
+  if (Number.isFinite(score)) result.score = score;
+  if (Number.isFinite(percentage)) result.percentage = percentage;
+  return result;
 }
 
 async function fetchFormSubmissions(formId, apiKey) {
@@ -92,7 +93,7 @@ export default async function handler(req, res) {
       submissions,
       tests: TESTS.map(({ day, title, formId }) => ({ day, title, formId })),
       total: submissions.length,
-      scoringNote: 'Scores are read from Jotform quiz/calculation fields when present. The dashboard never invents a numeric score.'
+      scoringNote: 'Scores are read from Jotform quiz/calculation fields when present. Unscored submissions omit score fields rather than displaying 0.'
     });
   } catch (error) {
     return res.status(502).json({ error: 'Unable to load Jotform submissions', details: error.message });
