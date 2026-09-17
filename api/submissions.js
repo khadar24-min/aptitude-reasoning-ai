@@ -18,7 +18,7 @@ function textValue(value) {
   return String(value);
 }
 
-function normalizeSubmission(submission, test) {
+function normalizeSubmission(submission, test, questions) {
   const answers = submission.answers || {};
   const values = Object.values(answers).map((a) => ({
     name: a.name || a.text || a.label || '',
@@ -27,7 +27,7 @@ function normalizeSubmission(submission, test) {
   const find = (pattern) => values.find((v) => pattern.test(v.name))?.answer;
   const name = textValue(find(/candidate\s*name|full\s*name/i)) || 'Unknown candidate';
   const rollNumber = textValue(find(/roll\s*(number|no\.?)/i)) || '—';
-  const scoreRaw = find(/^(score|total\s*score|quiz\s*score|points)$/i) ?? find(/score|points/i);
+  const scoreRaw = find(/^(score|total\s*score|quiz\s*score|points|form\s*calculation|calculation)/i) ?? find(/score|points|calculation/i);
   const percentageRaw = find(/percentage|percent|accuracy/i);
   const score = Number.parseFloat(textValue(scoreRaw).replace('%',''));
   const percentage = Number.parseFloat(textValue(percentageRaw).replace('%',''));
@@ -41,7 +41,8 @@ function normalizeSubmission(submission, test) {
     rollNumber,
     score: Number.isFinite(score) ? score : null,
     percentage: Number.isFinite(percentage) ? percentage : null,
-    answers: values
+    answers: values,
+    questions
   };
 }
 
@@ -51,6 +52,21 @@ async function fetchFormSubmissions(formId, apiKey) {
   const data = await response.json();
   if (!response.ok || data.responseCode >= 400) throw new Error(`Jotform form ${formId} request failed`);
   return data.content || [];
+}
+
+async function fetchFormQuestions(formId, apiKey) {
+  const url = `https://api.jotform.com/form/${encodeURIComponent(formId)}?apiKey=${encodeURIComponent(apiKey)}`;
+  const response = await fetch(url);
+  if (!response.ok) return [];
+  const data = await response.json();
+  const content = data.content || {};
+  return Object.values(content).map((q) => ({
+    id: q.qid || q.id || '',
+    name: q.name || '',
+    text: q.text || q.label || '',
+    type: q.type || '',
+    options: q.options || null
+  }));
 }
 
 export default async function handler(req, res) {
@@ -64,8 +80,11 @@ export default async function handler(req, res) {
     if (!selectedTests.length) return res.status(400).json({ error: 'Unknown test day' });
 
     const results = await Promise.all(selectedTests.map(async (test) => {
-      const raw = await fetchFormSubmissions(test.formId, apiKey);
-      return raw.map((submission) => normalizeSubmission(submission, test));
+      const [raw, questions] = await Promise.all([
+        fetchFormSubmissions(test.formId, apiKey),
+        fetchFormQuestions(test.formId, apiKey)
+      ]);
+      return raw.map((submission) => normalizeSubmission(submission, test, questions));
     }));
 
     const submissions = results.flat().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -73,7 +92,7 @@ export default async function handler(req, res) {
       submissions,
       tests: TESTS.map(({ day, title, formId }) => ({ day, title, formId })),
       total: submissions.length,
-      scoringNote: 'Scores are reported only when Jotform submission data contains score fields. The API does not invent a score when an answer key is unavailable.'
+      scoringNote: 'Scores are read from Jotform quiz/calculation fields when present. The dashboard never invents a numeric score.'
     });
   } catch (error) {
     return res.status(502).json({ error: 'Unable to load Jotform submissions', details: error.message });
