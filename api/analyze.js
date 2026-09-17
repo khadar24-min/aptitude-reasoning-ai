@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     if (!submission) return res.status(400).json({ error: 'Submission is required' });
 
     const response = await client.responses.create({
-      model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
+      model: process.env.OPENAI_MODEL || 'gpt-5.6',
       instructions: `You are the assessment analytics engine for an Aptitude & Reasoning platform. Analyze one Jotform submission using the supplied question metadata and selected answers.
 
 Return ONLY valid JSON with these fields:
@@ -36,6 +36,10 @@ Rules:
     try { result = JSON.parse(text); } catch { result = { rawAnalysis: text }; }
     return res.status(200).json(result);
   } catch (error) {
-    return res.status(500).json({ error: 'AI analysis failed', details: error.message });
+    console.error('AI analysis error:', error?.message || error);
+    return res.status(500).json({
+      error: 'AI analysis failed',
+      details: error?.message || 'Unknown OpenAI error'
+    });
   }
 }
